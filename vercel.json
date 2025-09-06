@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/**/*.js": {
+    "api/**/*.[jt]s": {
       "runtime": "nodejs20.x"
     }
   }
