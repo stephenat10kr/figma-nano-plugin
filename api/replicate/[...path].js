@@ -1,13 +1,14 @@
-// api/replicate/[...path].js
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
   if (req.method === "OPTIONS") {
     res.status(204).end();
     return;
   }
 
+  // Build the target Replicate URL
   const targetPath = "/" + (req.query.path || []).join("/");
   const targetUrl = "https://api.replicate.com" + targetPath;
 
@@ -22,9 +23,17 @@ export default async function handler(req, res) {
     });
 
     const text = await upstream.text();
-    res.status(upstream.status).send(text);
+
+    // Echo debug info
+    res.status(upstream.status).send(
+      JSON.stringify({
+        proxying: true,
+        targetUrl,
+        status: upstream.status,
+        body: text ? JSON.parse(text) : null
+      })
+    );
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
 }
-
