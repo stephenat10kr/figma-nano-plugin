@@ -8,8 +8,9 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Build the target Replicate URL
-  const targetPath = "/" + (req.query.path || []).join("/");
+  // Properly capture the extra path
+  const pathSegments = Array.isArray(req.query.path) ? req.query.path : [];
+  const targetPath = "/" + pathSegments.join("/");
   const targetUrl = "https://api.replicate.com" + targetPath;
 
   try {
@@ -24,7 +25,6 @@ export default async function handler(req, res) {
 
     const text = await upstream.text();
 
-    // Echo debug info
     res.status(upstream.status).send(
       JSON.stringify({
         proxying: true,
