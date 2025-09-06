@@ -1,6 +1,6 @@
 // api/replicate.js
 export default async function handler(req, res) {
-  // CORS headers so Figma is allowed
+  // Always send CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
@@ -9,20 +9,22 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Build the target URL by stripping "/api/replicate"
-  const path = req.url.replace(/^\/api\/replicate/, "");
-  const url = "https://api.replicate.com" + path;
+  // Forward the request to Replicate
+  const targetUrl = "https://api.replicate.com" + req.url.replace(/^\/api\/replicate/, "");
+  
+  try {
+    const upstream = await fetch(targetUrl, {
+      method: req.method,
+      headers: {
+        "Authorization": `Bearer ${process.env.REPLICATE_API_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: req.method === "GET" ? undefined : JSON.stringify(req.body || {})
+    });
 
-  // Forward request to Replicate with your API token
-  const upstream = await fetch(url, {
-    method: req.method,
-    headers: {
-      "Authorization": `Bearer ${process.env.REPLICATE_API_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    body: req.method === "GET" ? undefined : JSON.stringify(req.body || {})
-  });
-
-  const text = await upstream.text();
-  res.status(upstream.status).send(text);
+    const text = await upstream.text();
+    res.status(upstream.status).send(text);
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
 }
